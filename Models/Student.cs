@@ -17,5 +17,7 @@ public partial class Student
 
     public virtual Class Class { get; set; } = null!;
 
+    public virtual ICollection<Grade> Grades { get; set; }
+
     public virtual ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
 }

@@ -23,7 +23,8 @@ namespace Labb3_School
                 Console.WriteLine("3. View staff");
                 Console.WriteLine("4. Add student");
                 Console.WriteLine("5. Add staff");
-                Console.WriteLine("6. Exit");
+                Console.WriteLine("6. Data Menu");
+                Console.WriteLine("7. Exit");
 
                 string input = Console.ReadLine();
 
@@ -50,8 +51,12 @@ namespace Labb3_School
                         case 5:
                             Methods.AddStaff();
                             break;
-                        
+
                         case 6:
+                            DataMenu.DataUserMenu();
+                            break;
+                        
+                        case 7:
                             isRunning = false;
                             break;
 

@@ -19,5 +19,13 @@ public partial class Staff
 
     public string PhoneNumber { get; set; } = null!;
 
+    public int? DepartmentId { get; set; }
+
+    public decimal? Salary { get; set; }
+
+    public DateOnly? HireDate { get; set; }
+
+    public virtual Department? Department { get; set; }
+
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
 }

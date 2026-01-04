@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Channels;
 using Labb3_School.Data;
@@ -429,6 +430,245 @@ namespace Labb3_School
             Console.WriteLine("Press anywhere to exit");
             Console.ReadKey();
 
+        }
+
+
+        public static void StaffAmount()
+        {
+
+            using var context = new SchoolContext();
+
+            Console.WriteLine("Choose department:");
+            Console.WriteLine("1. Teachers");
+            Console.WriteLine("2. Management");
+            Console.WriteLine("3. IT & Service");
+
+            if (!int.TryParse(Console.ReadLine(), out int choice))
+            {
+                Console.WriteLine("Invalid choice. Press anywhere to exit");
+                Console.ReadKey();
+                return;
+            }
+
+            //Switch expression for each department
+            string departmentFilter = choice switch
+            {
+                1 => "Teachers",
+                2 => "Management",
+                3 => "IT and service",
+                _ => "Invalid choice"
+            };
+
+            if (departmentFilter == "Invalid choice")
+            {
+                Console.WriteLine("Invalid choice. Press anywhere to exit");
+                Console.ReadKey();
+                return;
+            }
+
+            int departmentId = choice;
+
+            var staff = context.Staff
+                               .Where(s => s.DepartmentId == departmentId)
+                               .ToList();
+
+            staff.ForEach(s =>
+                Console.WriteLine($"Id: {s.Id}, {s.FirstName} {s.LastName} - {s.Role}")
+            );
+
+            Console.WriteLine($"\nTotal staff: {staff.Count}");
+            Console.WriteLine("\nPress any key to exit");
+            Console.ReadKey();
+
+        }
+
+
+        public static void StudentInformation()
+        {
+            using var context = new SchoolContext();
+
+            var students = context.Students
+                                  .Include(s => s.Class)
+                                  .Include(s => s.Grades)
+                                    .ThenInclude(g => g.Course)
+                                  .ToList();
+
+            foreach (var student in students)
+            {
+                Console.WriteLine($"\nId: {student.Id}, {student.FirstName} {student.LastName}\n{student.Class.Name}");
+
+                foreach (var grade in student.Grades)
+                {
+                    Console.WriteLine($"Course: {grade.Course.Course1}, Grade: {grade.Grade1}\n");
+                }
+                Console.WriteLine("----------------------------------");
+            }
+
+            Console.ReadKey();
+        }
+
+
+        public static void ActiveCourses()
+        {
+            var context = new SchoolContext();
+
+            //Converts DateOnly datatype in Course to todays date
+            var activeCourses = context.Courses
+                                       .Where(c => c.StartDate <= DateOnly.FromDateTime(DateTime.Now) && c.EndDate >= DateOnly.FromDateTime(DateTime.Now))
+                                       .ToList();
+
+            var completedCourses = context.Courses
+                                          .Where(c => c.EndDate <= DateOnly.FromDateTime(DateTime.Now))
+                                          .ToList();
+
+            Console.WriteLine("Choose an alternative:");
+            Console.WriteLine("1. Show active courses");
+            Console.WriteLine("2. Show completed courses");
+
+            if (!int.TryParse(Console.ReadLine(), out int choice))
+            {
+                Console.WriteLine("Invalid choice. Press anywhere to exit");
+                return;
+            }
+
+            switch (choice)
+            {
+                case 1:
+                    //checks if activeCourses contains anything in the list
+                    if (activeCourses.Any())
+                    {
+                        foreach (var course in activeCourses)
+                        {
+                            Console.WriteLine($"{course.Course1}\nStart-date: {course.StartDate}\nEnd-date: {course.EndDate}\n");
+
+                        }
+
+                        Console.WriteLine("Press anywhere to exit");
+                        Console.ReadKey();
+                        break;
+                    }
+                    else 
+                    { 
+                    Console.WriteLine("No active courses");
+                    Console.WriteLine("Press anywhere to exit");
+                    Console.ReadKey();
+                    break;
+                    }
+
+                case 2:
+                    //checks if completedCourses contains anything in the list
+                    if (completedCourses.Any())
+                    { 
+                        foreach (var course in completedCourses)
+                        {
+                            Console.WriteLine($"{course.Course1}\nStart-date: {course.StartDate}\nEnd-date: {course.EndDate}\n");
+                            
+                        }
+
+                        Console.WriteLine("Press anywhere to exit");
+                        Console.ReadKey();
+                        break;
+                    }
+                    Console.WriteLine("No completed courses");
+                    Console.WriteLine("Press anywhere to exit");
+                    Console.ReadKey();
+                    break;
+
+            }
+
+
+        }
+
+
+        public static void SetGrade()
+        {
+            using var context = new SchoolContext();
+
+            try
+            {
+                //Sets StudentId
+                Console.WriteLine("Enter Student Id: ");
+                if (!int.TryParse(Console.ReadLine(), out int studentId))
+                {
+                    Console.WriteLine("Invalid Student Id. Press anywhere to exit.");
+                    Console.ReadKey();
+                    return;
+                }
+
+                //Sets CourseId
+                Console.WriteLine("Enter Course Id: ");
+                if (!int.TryParse(Console.ReadLine(), out int courseId))
+                {
+                    Console.WriteLine("Invalid Course Id. Press anywhere to exit.");
+                    Console.ReadKey();
+                    return;
+                }
+
+                //Sets Grade
+                Console.WriteLine("Enter Course Grade: ");
+                string gradeLetter = Console.ReadLine();
+
+                //Checks if student is in the written course. If not, exit method
+                var studentCourse = context.StudentCourses
+                                           .FirstOrDefault(sc => sc.StudentId == studentId && sc.CourseId == courseId);
+
+                if (studentCourse == null)
+                {
+                    Console.WriteLine("Student is not in this course. Press anywhere to exit.");
+                    Console.ReadKey();
+                    return;
+                }
+
+                //All grades that are valid
+                string[] validGrades = { "A", "B", "C", "D", "E", "F" };
+
+                if (!validGrades.Contains(gradeLetter))
+                {
+                    Console.WriteLine("Invalid grade. Press anywhere to exit.");
+                    Console.ReadKey();
+                    return;
+                }
+
+                //Sets StaffId
+                Console.WriteLine("Enter Teacher Id: ");
+                if (!int.TryParse(Console.ReadLine(), out int staffId))
+                {
+                    Console.WriteLine("Invalid Staff Id. Press anywhere to exit.");
+                    Console.ReadKey();
+                    return;
+                }
+
+                using var transaction = context.Database.BeginTransaction();
+
+                //Sets the grading date to DateTime.Now (today), and makes it DateOnly
+                DateTime now = DateTime.Now;
+                DateOnly today = DateOnly.FromDateTime(now);
+
+                //Creates the grade with the user input.
+                var grade = new Grade
+                {
+                    Grade1 = gradeLetter,
+                    StudentId = studentId,
+                    CourseId = courseId,
+                    GradeSetDate = today,
+                    StaffId = staffId,
+                    StudentCourse = studentCourse
+                };
+
+                //Adds the grade and saves changes
+                context.Grades.Add(grade);
+                context.SaveChanges();
+                transaction.Commit();
+
+                Console.WriteLine("Grade added successfully.");
+            }
+            catch
+            {
+                Console.WriteLine("Error. Please try again.");
+            }
+
+            Console.WriteLine("Press anywhere to exit.");
+            Console.ReadKey();
         }
 
     }
